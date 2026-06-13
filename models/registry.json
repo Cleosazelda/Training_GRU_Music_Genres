@@ -1,0 +1,60 @@
+[
+  {
+    "run_id": "run_20260613_163325_FMA_3_Seconds_(Besar",
+    "timestamp": "2026-06-13T16:33:25.953542",
+    "dataset_name": "FMA 3 Seconds (Besar, ~87MB)",
+    "hyperparams": {
+      "hidden_layers": 4,
+      "hidden_units": 512,
+      "dense_activation": "swish",
+      "use_batchnorm": true,
+      "dropout_rate": 0.15,
+      "l2_reg_rate": 0.0001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 256,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.8988147377967834,
+      "val_accuracy": 0.8180510401725769,
+      "precision": 0.8160439026842548,
+      "recall": 0.8154866149612209,
+      "f1": 0.8151524881156201,
+      "val_loss": 0.7825779318809509,
+      "epochs_run": 119
+    },
+    "run_dir": "models\\run_20260613_163325_FMA_3_Seconds_(Besar",
+    "model_path": "models\\run_20260613_163325_FMA_3_Seconds_(Besar\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_165631_FMA_3_Seconds_(Besar",
+    "timestamp": "2026-06-13T16:56:31.604436",
+    "dataset_name": "FMA 3 Seconds (Besar, ~87MB)",
+    "hyperparams": {
+      "hidden_layers": 4,
+      "hidden_units": 512,
+      "dense_activation": "swish",
+      "use_batchnorm": true,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 256,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.8339223265647888,
+      "val_accuracy": 0.8036652207374573,
+      "precision": 0.8047456979633177,
+      "recall": 0.8036652489367025,
+      "f1": 0.8032863895467587,
+      "val_loss": 0.7958316206932068,
+      "epochs_run": 200
+    },
+    "run_dir": "models\\run_20260613_165631_FMA_3_Seconds_(Besar",
+    "model_path": "models\\run_20260613_165631_FMA_3_Seconds_(Besar\\model.keras"
+  }
+]
