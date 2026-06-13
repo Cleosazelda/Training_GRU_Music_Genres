@@ -10,6 +10,18 @@ import joblib
 
 st.set_page_config(page_title="Music Genre Classification", layout="wide")
 
+st.markdown("""
+<style>
+    div[data-testid="metric-container"] {
+        background-color: #2e2e2e;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        border: 1px solid #444;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🎵 Music Genre Classification with GRU")
 st.markdown("Aplikasi Implementasi Deep Learning untuk Klasifikasi Genre Musik menggunakan Arsitektur Gated Recurrent Unit (GRU).")
 
@@ -144,8 +156,10 @@ with tab2:
                 
                 final_train_acc = history.history['accuracy'][-1]
                 final_val_acc = history.history['val_accuracy'][-1]
-                st.metric("Final Training Accuracy", f"{final_train_acc:.4f}")
-                st.metric("Final Validation Accuracy", f"{final_val_acc:.4f}")
+                
+                res_col1, res_col2 = st.columns(2)
+                res_col1.metric("🌟 Final Training Accuracy", f"{final_train_acc*100:.2f}%")
+                res_col2.metric("⭐ Final Validation Accuracy", f"{final_val_acc*100:.2f}%")
             except Exception as e:
                 st.error(f"Gagal melakukan training: {e}")
 
@@ -167,13 +181,32 @@ with tab3:
         fig = plot_training_history(HistoryDummy(history_data))
         st.pyplot(fig)
         
-        st.subheader("Confusion Matrix")
-        with st.spinner("Menghitung Confusion Matrix pada data testing..."):
+        st.markdown("---")
+        st.subheader("Detail Evaluasi & Confusion Matrix")
+        with st.spinner("Menghitung Metrik Performa pada data testing..."):
+            from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+            
             X_train, X_test, y_train, y_test, _ = load_and_preprocess_data(DATASET_PATH)
             model = tf.keras.models.load_model("models/best_gru_model.h5")
             y_pred_prob = model.predict(X_test)
             y_pred = np.argmax(y_pred_prob, axis=1)
             
+            # Hitung metrics
+            acc = accuracy_score(y_test, y_pred)
+            prec = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+            rec = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+            f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
+            
+            # Tampilkan metrik dalam kartu-kartu yang rapi
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("🎯 Accuracy", f"{acc*100:.2f}%")
+            m2.metric("📊 Precision (Weighted)", f"{prec*100:.2f}%")
+            m3.metric("📈 Recall (Weighted)", f"{rec*100:.2f}%")
+            m4.metric("🏆 F1-Score (Weighted)", f"{f1*100:.2f}%")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Tampilkan confusion matrix
             fig_cm = plot_confusion_matrix_custom(y_test, y_pred, classes)
             st.pyplot(fig_cm)
             
