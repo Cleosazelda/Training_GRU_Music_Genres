@@ -180,12 +180,22 @@ def build_leaderboard_df(experiments: list) -> pd.DataFrame:
     for exp in experiments:
         m  = exp.get("metrics", {})
         hp = exp.get("hyperparams", {})
+        
+        arch = hp.get("architecture", "DNN")
+        if arch == "GRU":
+            layers_val = f"{hp.get('gru_layers', '-')} (Bi)" if hp.get("bidirectional") else str(hp.get('gru_layers', '-'))
+            units_val = hp.get("gru_units", "-")
+        else:
+            layers_val = hp.get("hidden_layers", "-")
+            units_val = hp.get("hidden_units", "-")
+            
         rows.append({
             "Run ID":         exp["run_id"],
             "Timestamp":      exp["timestamp"][:19].replace("T", " "),
             "Dataset":        exp.get("dataset_name", "-"),
-            "Layers":         hp.get("hidden_layers", "-"),
-            "Units":          hp.get("hidden_units", "-"),
+            "Arsitektur":     arch,
+            "Layers":         layers_val,
+            "Units":          units_val,
             "Aktivasi":       hp.get("dense_activation", "-"),
             "Optimizer":      hp.get("optimizer_name", "-"),
             "LR":             hp.get("learning_rate", "-"),

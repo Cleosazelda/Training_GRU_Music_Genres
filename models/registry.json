@@ -56,5 +56,252 @@
     },
     "run_dir": "models\\run_20260613_165631_FMA_3_Seconds_(Besar",
     "model_path": "models\\run_20260613_165631_FMA_3_Seconds_(Besar\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_205646_FMA_3_Seconds_Besar",
+    "timestamp": "2026-06-13T21:00:26.607020",
+    "dataset_name": "FMA 3 Seconds (Besar, ~87MB)",
+    "hyperparams": {
+      "hidden_layers": 5,
+      "hidden_units": 1024,
+      "dense_activation": "swish",
+      "use_batchnorm": true,
+      "dropout_rate": 0.2,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Nadam",
+      "learning_rate": 0.0005,
+      "batch_size": 256,
+      "use_grad_clip": true,
+      "use_mixed_precision": true,
+      "note": "Manual import - saved by ModelCheckpoint, registry entry via script"
+    },
+    "metrics": {
+      "train_accuracy": 0.9646,
+      "val_accuracy": 0.8643,
+      "precision": 0.8646593872612913,
+      "recall": 0.8642732049036778,
+      "f1": 0.8641362354672352,
+      "val_loss": 0.773,
+      "epochs_run": 165
+    },
+    "run_dir": "models\\run_20260613_205646_FMA_3_Seconds_Besar",
+    "model_path": "models\\run_20260613_205646_FMA_3_Seconds_Besar\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_222419_gtzan_30sec_(1.1_MB)",
+    "timestamp": "2026-06-13T22:24:19.461563",
+    "dataset_name": "gtzan_30sec (1.1 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 1,
+      "gru_units": 64,
+      "dense_units": 64,
+      "bidirectional": false,
+      "dropout_rate": 0.2,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true,
+      "dense_activation": "relu"
+    },
+    "metrics": {
+      "train_accuracy": 0.41999998688697815,
+      "val_accuracy": 0.47999998927116394,
+      "precision": 0.489339814904331,
+      "recall": 0.46,
+      "f1": 0.4559756513824098,
+      "val_loss": 1.5920007228851318,
+      "epochs_run": 112
+    },
+    "run_dir": "models\\run_20260613_222419_gtzan_30sec_(1.1_MB)",
+    "model_path": "models\\run_20260613_222419_gtzan_30sec_(1.1_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_223742_gtzan_30sec_(1.1_MB)",
+    "timestamp": "2026-06-13T22:37:42.912364",
+    "dataset_name": "gtzan_30sec (1.1 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "relu",
+      "bidirectional": false,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.42625001072883606,
+      "val_accuracy": 0.48500001430511475,
+      "precision": 0.5163515487350626,
+      "recall": 0.485,
+      "f1": 0.4813567721240355,
+      "val_loss": 1.613593578338623,
+      "epochs_run": 62
+    },
+    "run_dir": "models\\run_20260613_223742_gtzan_30sec_(1.1_MB)",
+    "model_path": "models\\run_20260613_223742_gtzan_30sec_(1.1_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_224223_gtzan_30sec_(1.1_MB)",
+    "timestamp": "2026-06-13T22:42:23.499290",
+    "dataset_name": "gtzan_30sec (1.1 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.7037500143051147,
+      "val_accuracy": 0.6499999761581421,
+      "precision": 0.6296028350734234,
+      "recall": 0.62,
+      "f1": 0.622544410355707,
+      "val_loss": 1.266951322555542,
+      "epochs_run": 63
+    },
+    "run_dir": "models\\run_20260613_224223_gtzan_30sec_(1.1_MB)",
+    "model_path": "models\\run_20260613_224223_gtzan_30sec_(1.1_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260613_230126_gtzan_30sec_(1.1_MB)",
+    "timestamp": "2026-06-13T23:01:26.659688",
+    "dataset_name": "gtzan_30sec (1.1 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 3,
+      "gru_units": 256,
+      "dense_units": 128,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.3,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.7875000238418579,
+      "val_accuracy": 0.6499999761581421,
+      "precision": 0.6170788552487776,
+      "recall": 0.6,
+      "f1": 0.5980455047599653,
+      "val_loss": 1.389015793800354,
+      "epochs_run": 37
+    },
+    "run_dir": "models\\run_20260613_230126_gtzan_30sec_(1.1_MB)",
+    "model_path": "models\\run_20260613_230126_gtzan_30sec_(1.1_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_021727_gtzan_3sec_(10.6_MB)",
+    "timestamp": "2026-06-14T02:17:27.640523",
+    "dataset_name": "gtzan_3sec (10.6 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 3,
+      "gru_units": 256,
+      "dense_units": 128,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.3,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.9196696877479553,
+      "val_accuracy": 0.8308308124542236,
+      "precision": 0.8265910510314758,
+      "recall": 0.8258258258258259,
+      "f1": 0.825802848429066,
+      "val_loss": 0.7501660585403442,
+      "epochs_run": 45
+    },
+    "run_dir": "models\\run_20260614_021727_gtzan_3sec_(10.6_MB)",
+    "model_path": "models\\run_20260614_021727_gtzan_3sec_(10.6_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_062409_gtzan_3sec_(10.6_MB)",
+    "timestamp": "2026-06-14T06:24:09.272786",
+    "dataset_name": "gtzan_3sec (10.6 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "relu",
+      "bidirectional": false,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.525650680065155,
+      "val_accuracy": 0.5290290117263794,
+      "precision": 0.5827405665800076,
+      "recall": 0.529029029029029,
+      "f1": 0.5365885588692004,
+      "val_loss": 1.3731954097747803,
+      "epochs_run": 41
+    },
+    "run_dir": "models\\run_20260614_062409_gtzan_3sec_(10.6_MB)",
+    "model_path": "models\\run_20260614_062409_gtzan_3sec_(10.6_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_063458_gtzan_3sec_(10.6_MB)",
+    "timestamp": "2026-06-14T06:34:58.099803",
+    "dataset_name": "gtzan_3sec (10.6 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 1,
+      "gru_units": 64,
+      "dense_units": 64,
+      "dense_activation": "relu",
+      "bidirectional": false,
+      "dropout_rate": 0.2,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.4554554522037506,
+      "val_accuracy": 0.49049049615859985,
+      "precision": 0.5274985245649576,
+      "recall": 0.4904904904904905,
+      "f1": 0.49585636348085205,
+      "val_loss": 1.4640872478485107,
+      "epochs_run": 74
+    },
+    "run_dir": "models\\run_20260614_063458_gtzan_3sec_(10.6_MB)",
+    "model_path": "models\\run_20260614_063458_gtzan_3sec_(10.6_MB)\\model.keras"
   }
 ]

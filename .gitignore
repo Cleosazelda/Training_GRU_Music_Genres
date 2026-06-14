@@ -1,0 +1,56 @@
+# ─── Python cache ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# ─── Environment ──────────────────────────────────────────────────────────────
+.env
+.venv/
+venv/
+env/
+
+# ─── Dataset (terlalu besar untuk GitHub) ─────────────────────────────────────
+# fma_3secs.csv = 87MB → melebihi limit GitHub 100MB
+FMA_like_GTZAN_for_Music_Genre_Classification/fma_3secs.csv
+
+# fma_30secs.csv = ~8MB → boleh di-push, hapus baris ini jika ingin exclude juga
+# FMA_like_GTZAN_for_Music_Genre_Classification/fma_30secs.csv
+
+# Dataset yang diupload user (bisa besar)
+FMA_like_GTZAN_for_Music_Genre_Classification/uploads/
+
+# ─── Model Weights (bisa sangat besar) ────────────────────────────────────────
+# Abaikan file model berat, tapi IZINKAN registry.json & metadata kecil
+models/**/*.keras
+models/**/*.h5
+models/best_dnn_model.keras
+models/best_dnn_model.h5
+
+# Izinkan file metadata kecil (scaler, encoder, classes, history)
+# Hapus '!' prefix jika tidak ingin di-push
+!models/registry.json
+!models/*/scaler.pkl
+!models/*/label_encoder.pkl
+!models/*/classes.pkl
+!models/*/history.pkl
+
+# ─── File temporary ───────────────────────────────────────────────────────────
+temp_audio_upload.wav
+*.tmp
+*.log
+
+# ─── Streamlit cache ──────────────────────────────────────────────────────────
+.streamlit/
+
+# ─── Jupyter Notebook ─────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini

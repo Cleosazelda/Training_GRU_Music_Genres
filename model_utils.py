@@ -107,6 +107,45 @@ def build_dense_model(input_dim, num_classes,
 
     return model
 
+def build_gru_model(input_dim, num_classes,
+                    gru_layers=2,
+                    gru_units=128,
+                    dropout_rate=0.3,
+                    l2_reg_rate=0.001,
+                    dense_units=64,
+                    dense_activation='relu',
+                    bidirectional=False,
+                    learning_rate=0.001,
+                    optimizer_name='Adam',
+                    use_grad_clip=False):
+    from tensorflow.keras.layers import GRU, Bidirectional, Reshape
+    kernel_reg = tf.keras.regularizers.l2(l2_reg_rate) if l2_reg_rate > 0.0 else None
+    model = Sequential(name='GRU_Music_Genre_Classifier')
+    model.add(Input(shape=(input_dim,), name='flat_input'))
+    model.add(Reshape((input_dim, 1), name='reshape_to_sequence'))
+    for i in range(gru_layers):
+        return_seq = (i < gru_layers - 1)
+        gru_cell = GRU(gru_units, return_sequences=return_seq, dropout=dropout_rate,
+                       recurrent_dropout=0.0, kernel_regularizer=kernel_reg, name=f'gru_{i+1}')
+        if bidirectional:
+            model.add(Bidirectional(gru_cell, name=f'bi_gru_{i+1}'))
+        else:
+            model.add(gru_cell)
+    if dense_units > 0:
+        model.add(Dense(dense_units, activation=dense_activation, kernel_regularizer=kernel_reg, name='dense_head'))
+        if dropout_rate > 0:
+            model.add(Dropout(dropout_rate, name='dropout_head'))
+    model.add(Dense(num_classes, activation='linear', name='output_logits'))
+    model.add(tf.keras.layers.Activation('softmax', dtype='float32', name='output_softmax'))
+    opt_kwargs = {'learning_rate': learning_rate}
+    if use_grad_clip:
+        opt_kwargs['clipvalue'] = 1.0
+    opt_name = optimizer_name.lower()
+    optimizers_map = {'adam': Adam, 'adamw': AdamW, 'rmsprop': RMSprop, 'sgd': SGD,
+                      'adagrad': Adagrad, 'adadelta': Adadelta, 'adamax': Adamax, 'nadam': Nadam}
+    optimizer = optimizers_map.get(opt_name, Adam)(**opt_kwargs)
+    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
 
 def build_tf_dataset(X, y, batch_size=64, shuffle=False):
     """

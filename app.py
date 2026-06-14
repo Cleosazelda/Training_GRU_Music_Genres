@@ -5,7 +5,7 @@ import os
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
 from data_utils import load_and_preprocess_data, preprocess_audio_for_inference
-from model_utils import (build_dense_model, build_tf_dataset,
+from model_utils import (build_dense_model, build_gru_model, build_tf_dataset,
                          plot_training_history, plot_confusion_matrix_custom,
                          enable_mixed_precision)
 from experiment_tracker import (generate_run_id, save_experiment,
@@ -16,6 +16,8 @@ from experiment_tracker import (generate_run_id, save_experiment,
 import joblib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from dataset_manager import (discover_csv_datasets, get_dataset_info,
+                              save_csv_to_library, validate_csv_for_training)
 
 # ─── Page Configuration ────────────────────────────────────────────────────────
 st.set_page_config(
@@ -95,10 +97,14 @@ st.markdown(
     "Dioptimalkan dengan Mixed Precision & tf.data Pipeline."
 )
 
-DATASET_OPTIONS = {
-    "FMA 3 Seconds (Besar, ~87MB)": "FMA_like_GTZAN_for_Music_Genre_Classification/fma_3secs.csv",
-    "FMA 30 Seconds (Cepat, ~8MB)": "FMA_like_GTZAN_for_Music_Genre_Classification/fma_30secs.csv",
-}
+# Dataset options di-load secara dinamis dari folder datasets/csv/ dan folder legacy
+DATASET_OPTIONS = discover_csv_datasets()
+if not DATASET_OPTIONS:
+    # Fallback ke legacy path jika belum ada dataset di folder baru
+    DATASET_OPTIONS = {
+        "FMA 3 Seconds (~87MB)": "FMA_like_GTZAN_for_Music_Genre_Classification/fma_3secs.csv",
+        "FMA 30 Seconds (~8MB)": "FMA_like_GTZAN_for_Music_Genre_Classification/fma_30secs.csv",
+    }
 os.makedirs("models", exist_ok=True)
 
 # ─── Tabs ──────────────────────────────────────────────────────────────────────
@@ -152,58 +158,88 @@ with tab1:
 # TAB 2: Model Training
 # ══════════════════════════════════════════════════════════════════════════════
 with tab2:
-    st.header("⚙️ Model Training — Feed-Forward Neural Network (DNN)")
-    st.markdown(
-        "Konfigurasi arsitektur **Deep Neural Network** yang dioptimalkan untuk data tabular fitur statistik. "
-        "Gunakan Mixed Precision dan tf.data untuk training yang cepat di GPU."
-    )
+    st.header("Model Training — GRU Architecture")
 
+    # Pilih Arsitektur
+    arch_choice = st.radio(
+        "Pilih Arsitektur:",
+        ["GRU (Gated Recurrent Unit)", "DNN (Feed-Forward Neural Network)"],
+        horizontal=True, key="arch_choice",
+        help="GRU: wajib dosen. DNN: baseline perbandingan."
+    )
+    use_gru = arch_choice.startswith("GRU")
+    if use_gru:
+        st.success("GRU dipilih. Fitur statistik di-reshape ke (batch, n_fitur, 1) sebagai sekuens.")
+    else:
+        st.info("DNN dipilih. Dense layers optimal untuk data fitur statistik tabular.")
+
+    st.markdown("---")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader("1. Pilihan Dataset")
+        st.subheader("1. Dataset")
         selected_ds_train = st.selectbox("Dataset Training:", list(DATASET_OPTIONS.keys()), key="ds_train")
         TRAIN_DATASET_PATH = DATASET_OPTIONS[selected_ds_train]
 
-        st.subheader("2. Arsitektur DNN")
-        hidden_layers  = st.number_input("Jumlah Hidden Layer", min_value=1, max_value=8, value=3,
-                                          help="Arsitektur Pyramid: jumlah neuron berkurang 2x setiap layer.")
-        hidden_units   = st.selectbox("Neuron Layer Pertama (Puncak Piramida)", [64, 128, 256, 512, 1024], index=2)
-        dense_activation = st.selectbox("Fungsi Aktivasi Hidden Layer",
-                                         ['relu', 'elu', 'selu', 'gelu', 'swish', 'tanh'],
-                                         help="ReLU: cepat & umum. GELU/Swish: performa lebih tinggi namun lebih lambat.")
-        use_batchnorm  = st.checkbox("Batch Normalization", value=True,
-                                      help="Menstabilkan distribusi aktivasi antar layer, mempercepat konvergensi.")
+        st.subheader("2. Arsitektur")
+        if use_gru:
+            gru_layers    = st.number_input("Jumlah GRU Layer", min_value=1, max_value=4, value=2, key="gru_layers",
+                                            help="G1=1, G2/G3=2, G4=3")
+            gru_units     = st.selectbox("GRU Units", [32, 64, 128, 256, 512], index=2, key="gru_units",
+                                         help="G1=64, G2/G3=128, G4=256")
+            dense_units      = st.selectbox("Dense Head setelah GRU", [0, 32, 64, 128], index=2, key="dense_units")
+            dense_activation = st.selectbox("Fungsi Aktivasi Dense Head",
+                                            ["relu", "tanh", "elu", "selu", "swish", "gelu"],
+                                            key="gru_activation",
+                                            help="Aktivasi layer Dense setelah GRU. relu=default, tanh=klasik RNN, swish=modern.")
+            bidirectional    = st.checkbox("Bidirectional GRU", value=False, key="bi_gru",
+                                           help="G1/G2=OFF, G3/G4=ON")
+            hidden_layers = 3; hidden_units = 256; use_batchnorm = True
+        else:
+            hidden_layers    = st.number_input("Jumlah Hidden Layer", min_value=1, max_value=8, value=3)
+            hidden_units     = st.selectbox("Neuron Layer Pertama", [64, 128, 256, 512, 1024], index=2)
+            dense_activation = st.selectbox("Fungsi Aktivasi", ["relu", "elu", "selu", "gelu", "swish", "tanh"])
+            use_batchnorm    = st.checkbox("Batch Normalization", value=True)
+            gru_layers = 2; gru_units = 128; dense_units = 64; bidirectional = False
 
     with col2:
         st.subheader("3. Regularisasi")
-        dropout_rate  = st.slider("Dropout Rate", 0.0, 0.7, 0.3, 0.05,
-                                   help="Menonaktifkan neuron secara acak saat training untuk mencegah overfitting.")
-        l2_reg_rate   = st.selectbox("L2 Regularization (Weight Decay)",
-                                      [0.0, 0.01, 0.001, 0.0001],
-                                      format_func=lambda x: "0 (Nonaktif)" if x == 0.0 else str(x), index=2)
+        dropout_rate = st.slider("Dropout Rate", 0.0, 0.7, 0.25, 0.05,
+                                 help="G1=0.20, G2=0.25, G3=0.25, G4=0.30")
+        l2_reg_rate  = st.selectbox("L2 Regularization",
+                                    [0.0, 0.01, 0.001, 0.0001],
+                                    format_func=lambda x: "0 (Nonaktif)" if x == 0.0 else str(x), index=2)
 
         st.subheader("4. Optimizer")
-        optimizer_name = st.selectbox("Optimizer", ['Adam', 'AdamW', 'RMSprop', 'SGD', 'Nadam', 'Adamax'])
-        learning_rate  = st.selectbox("Learning Rate", [0.01, 0.005, 0.001, 0.0005, 0.0001], index=2)
+        optimizer_name = st.selectbox("Optimizer", ["Adam", "AdamW", "RMSprop", "SGD", "Nadam", "Adamax"],
+                                      help="G1/G2/G3=Adam, G4=AdamW")
+        learning_rate  = st.selectbox("Learning Rate (LR)", [0.01, 0.005, 0.001, 0.0005, 0.0001], index=2)
         use_grad_clip  = st.checkbox("Gradient Clipping (clipvalue=1.0)", value=False)
 
     with col3:
-        st.subheader("5. Training Settings")
+        st.subheader("5. Training")
         batch_size = st.selectbox("Batch Size", [32, 64, 128, 256, 512], index=2,
-                                   help="Batch besar lebih efisien untuk GPU karena meningkatkan utilisasi memori.")
-        epochs     = st.number_input("Maks Epoch", min_value=5, max_value=500, value=100)
+                                  help="G1/G2/G3=128, G4=64")
+        epochs     = st.number_input("Maks Epoch", min_value=5, max_value=500, value=150)
 
         st.subheader("6. GPU Optimization")
-        use_mixed_precision = st.checkbox("Mixed Precision (float16) 🚀", value=True,
-                                           help="Mempercepat komputasi GPU 2-3x. Direkomendasikan untuk GPU NVIDIA Turing+.")
-        use_tf_data = st.checkbox("tf.data Pipeline + Prefetch 🚀", value=True,
-                                   help="Overlap CPU-GPU pipeline agar GPU tidak menganggur antar batch.")
+        use_mixed_precision = st.checkbox("Mixed Precision (float16)", value=True)
+        use_tf_data         = st.checkbox("tf.data + Prefetch", value=True)
 
-        st.subheader("7. Callbacks Otomatis")
+        st.subheader("7. Callbacks")
         use_early_stopping = st.checkbox("Early Stopping (patience=15)", value=True)
         use_reduce_lr      = st.checkbox("ReduceLROnPlateau (patience=7)", value=True)
-        use_checkpoint     = st.checkbox("ModelCheckpoint (simpan bobot terbaik)", value=True)
+        use_checkpoint     = st.checkbox("ModelCheckpoint (bobot terbaik)", value=True)
+
+    with st.expander("Panduan Eksperimen G1-G4"):
+        st.markdown(
+            "| Exp | GRU Layers | GRU Units | Bidirectional | Dropout | Optimizer | LR | Batch |\n"
+            "|-----|-----------|-----------|:-------------:|---------|-----------|-----|-------|\n"
+            "| G1 | 1 | 64 | OFF | 0.20 | Adam | 0.001 | 128 |\n"
+            "| G2 | 2 | 128 | OFF | 0.25 | Adam | 0.001 | 128 |\n"
+            "| G3 | 2 | 128 | ON | 0.25 | Adam | 0.001 | 128 |\n"
+            "| G4 | 3 | 256 | ON | 0.30 | AdamW | 0.001 | 64 |\n"
+        )
 
     # ── Training Button ──
     if st.button("🚀 Mulai Training Model", type="primary", key="train_btn"):
@@ -230,31 +266,49 @@ with tab2:
                 st.stop()
 
         # 3. Build model
-        with st.spinner("Membangun arsitektur DNN..."):
+        arch_label = "GRU" if use_gru else "DNN"
+        with st.spinner(f"Membangun arsitektur {arch_label}..."):
             try:
-                model = build_dense_model(
-                    input_dim=input_dim,
-                    num_classes=num_classes,
-                    hidden_layers=hidden_layers,
-                    hidden_units=hidden_units,
-                    dropout_rate=dropout_rate,
-                    l2_reg_rate=l2_reg_rate,
-                    dense_activation=dense_activation,
-                    use_batchnorm=use_batchnorm,
-                    learning_rate=learning_rate,
-                    optimizer_name=optimizer_name,
-                    use_grad_clip=use_grad_clip
-                )
+                if use_gru:
+                    model = build_gru_model(
+                        input_dim=input_dim,
+                        num_classes=num_classes,
+                        gru_layers=gru_layers,
+                        gru_units=gru_units,
+                        dropout_rate=dropout_rate,
+                        l2_reg_rate=l2_reg_rate,
+                        dense_units=dense_units,
+                        dense_activation=dense_activation,
+                        bidirectional=bidirectional,
+                        learning_rate=learning_rate,
+                        optimizer_name=optimizer_name,
+                        use_grad_clip=use_grad_clip
+                    )
+                else:
+                    model = build_dense_model(
+                        input_dim=input_dim,
+                        num_classes=num_classes,
+                        hidden_layers=hidden_layers,
+                        hidden_units=hidden_units,
+                        dropout_rate=dropout_rate,
+                        l2_reg_rate=l2_reg_rate,
+                        dense_activation=dense_activation,
+                        use_batchnorm=use_batchnorm,
+                        learning_rate=learning_rate,
+                        optimizer_name=optimizer_name,
+                        use_grad_clip=use_grad_clip
+                    )
 
                 # Tampilkan ringkasan arsitektur
                 summary_lines = []
                 model.summary(print_fn=lambda x: summary_lines.append(x))
-                with st.expander("🔍 Lihat Arsitektur Model"):
+                with st.expander(f"🔍 Lihat Arsitektur Model ({arch_label})"):
                     st.code("\n".join(summary_lines), language="text")
 
             except Exception as e:
                 st.error(f"❌ Gagal membangun model: {e}")
                 st.stop()
+
 
         # 4. Prepare callbacks
         callbacks_list = []
@@ -297,70 +351,104 @@ with tab2:
             )
 
         # 6. Train
-        with st.spinner(f"Training DNN hingga {epochs} epoch... (lihat terminal untuk progress per-epoch)"):
+        with st.spinner(f"Training {arch_label} hingga {epochs} epoch... (lihat terminal untuk progress per-epoch)"):
             try:
                 history = model.fit(**fit_kwargs)
             except Exception as e:
                 st.error(f"❌ Gagal training: {e}")
                 st.stop()
 
-        # 7. Save artifacts (shared / quick-access copy)
-        model.save("models/best_dnn_model.keras")
-        joblib.dump(history.history, "models/training_history.pkl")
-        joblib.dump(classes, "models/classes.pkl")
+        # ── Step 7: Simpan artefak utama ─────────────────────────────────────
+        try:
+            model.save("models/best_dnn_model.keras")
+            joblib.dump(history.history, "models/training_history.pkl")
+            joblib.dump(classes, "models/classes.pkl")
+            st.info("💾 Artefak model tersimpan.")
+        except Exception as e:
+            st.error(f"❌ Gagal menyimpan model: {e}")
 
         final_train_acc = history.history['accuracy'][-1]
         final_val_acc   = history.history['val_accuracy'][-1]
         best_val_acc    = max(history.history['val_accuracy'])
         actual_epochs   = len(history.history['accuracy'])
 
-        # 8. Hitung metrik lengkap untuk leaderboard
+        # ── Step 8: Hitung metrik (dengan fallback jika predict gagal) ────────
         from sklearn.metrics import precision_score, recall_score, f1_score
-        with st.spinner("Menghitung metrik evaluasi untuk leaderboard..."):
-            y_pred_lb = np.argmax(model.predict(X_test, verbose=0), axis=1)
-            prec_lb = precision_score(y_test, y_pred_lb, average='weighted', zero_division=0)
-            rec_lb  = recall_score(y_test, y_pred_lb, average='weighted', zero_division=0)
-            f1_lb   = f1_score(y_test, y_pred_lb, average='weighted', zero_division=0)
+        prec_lb = rec_lb = f1_lb = 0.0
+        try:
+            with st.spinner("Menghitung metrik evaluasi untuk leaderboard..."):
+                # Cast ke float32 agar kompatibel dengan mixed precision
+                X_test_f32 = X_test.astype(np.float32)
+                y_pred_lb = np.argmax(model.predict(X_test_f32, verbose=0), axis=1)
+                prec_lb = precision_score(y_test, y_pred_lb, average='weighted', zero_division=0)
+                rec_lb  = recall_score(y_test, y_pred_lb, average='weighted', zero_division=0)
+                f1_lb   = f1_score(y_test, y_pred_lb, average='weighted', zero_division=0)
+        except Exception as e:
+            st.warning(f"⚠️ Gagal menghitung Precision/Recall/F1 (akan disimpan sebagai 0): {e}")
 
-        # 9. Simpan ke experiment registry (persisten)
-        run_id = generate_run_id(selected_ds_train)
-        hyperparams_to_save = {
-            "hidden_layers":    hidden_layers,
-            "hidden_units":     hidden_units,
-            "dense_activation": dense_activation,
-            "use_batchnorm":    use_batchnorm,
-            "dropout_rate":     dropout_rate,
-            "l2_reg_rate":      l2_reg_rate,
-            "optimizer_name":   optimizer_name,
-            "learning_rate":    learning_rate,
-            "batch_size":       batch_size,
-            "use_grad_clip":    use_grad_clip,
-            "use_mixed_precision": use_mixed_precision,
-        }
-        metrics_to_save = {
-            "train_accuracy": float(final_train_acc),
-            "val_accuracy":   float(best_val_acc),
-            "precision":      float(prec_lb),
-            "recall":         float(rec_lb),
-            "f1":             float(f1_lb),
-            "val_loss":       float(min(history.history['val_loss'])),
-            "epochs_run":     actual_epochs,
-        }
-        scaler_saved   = joblib.load('models/scaler.pkl')
-        encoder_saved  = joblib.load('models/label_encoder.pkl')
-        save_experiment(
-            run_id=run_id,
-            dataset_name=selected_ds_train,
-            hyperparams=hyperparams_to_save,
-            metrics=metrics_to_save,
-            history=history.history,
-            model_obj=model,
-            scaler_obj=scaler_saved,
-            encoder_obj=encoder_saved,
-            classes_arr=classes
-        )
+        # ── Step 9: Simpan ke experiment registry ─────────────────────────────
+        try:
+            run_id = generate_run_id(selected_ds_train)
+            if use_gru:
+                hyperparams_to_save = {
+                    "architecture":  "GRU",
+                    "gru_layers":    gru_layers,
+                    "gru_units":     gru_units,
+                    "dense_units":   dense_units,
+                    "dense_activation": dense_activation,
+                    "bidirectional": bidirectional,
+                    "dropout_rate":  dropout_rate,
+                    "l2_reg_rate":   l2_reg_rate,
+                    "optimizer_name":      optimizer_name,
+                    "learning_rate":       learning_rate,
+                    "batch_size":          batch_size,
+                    "use_grad_clip":       use_grad_clip,
+                    "use_mixed_precision": use_mixed_precision,
+                }
+            else:
+                hyperparams_to_save = {
+                    "architecture":    "DNN",
+                    "hidden_layers":   hidden_layers,
+                    "hidden_units":    hidden_units,
+                    "dense_activation":dense_activation,
+                    "use_batchnorm":   use_batchnorm,
+                    "dropout_rate":    dropout_rate,
+                    "l2_reg_rate":     l2_reg_rate,
+                    "optimizer_name":      optimizer_name,
+                    "learning_rate":       learning_rate,
+                    "batch_size":          batch_size,
+                    "use_grad_clip":       use_grad_clip,
+                    "use_mixed_precision": use_mixed_precision,
+                }
 
-        st.success(f"🎉 Training Selesai! Tersimpan ke registry sebagai `{run_id}`")
+            metrics_to_save = {
+                "train_accuracy": float(final_train_acc),
+                "val_accuracy":   float(best_val_acc),
+                "precision":      float(prec_lb),
+                "recall":         float(rec_lb),
+                "f1":             float(f1_lb),
+                "val_loss":       float(min(history.history['val_loss'])),
+                "epochs_run":     actual_epochs,
+            }
+            scaler_saved  = joblib.load('models/scaler.pkl')
+            encoder_saved = joblib.load('models/label_encoder.pkl')
+            save_experiment(
+                run_id=run_id,
+                dataset_name=selected_ds_train,
+                hyperparams=hyperparams_to_save,
+                metrics=metrics_to_save,
+                history=history.history,
+                model_obj=model,
+                scaler_obj=scaler_saved,
+                encoder_obj=encoder_saved,
+                classes_arr=classes
+            )
+            st.success(f"🎉 Training Selesai! Tersimpan sebagai `{run_id}`")
+            st.info("➡️ Buka tab **🏆 Leaderboard** dan klik **🔄 Refresh** untuk melihat hasilnya.")
+        except Exception as e:
+            st.error(f"❌ Gagal menyimpan ke registry: {e}")
+            import traceback
+            st.code(traceback.format_exc(), language="text")
 
         r1, r2, r3, r4 = st.columns(4)
         r1.metric("🌟 Train Accuracy (Akhir)", f"{final_train_acc*100:.2f}%")
@@ -564,53 +652,86 @@ with tab5:
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 6: Upload Dataset Baru
-# ══════════════════════════════════════════════════════════════════════════════
+# Tab6 - Dataset Manager
 with tab6:
-    st.header("📤 Upload Dataset Baru")
-    st.markdown(
-        "Unggah file CSV berformat **FMA/GTZAN-like** (kolom `label` dan "
-        "fitur statistik audio: MFCC, chroma, tempo). "
-        "Dataset divalidasi otomatis dan siap digunakan untuk training."
-    )
+    st.header("Upload dan Kelola Dataset")
+    st.markdown("Tambahkan dataset baru ke Library. Setelah tersimpan, dataset langsung tersedia di semua Tab.")
 
-    with st.expander("📋 Persyaratan kolom dataset"):
+    if st.button("Refresh Daftar Dataset", key="refresh_ds"):
+        st.rerun()
+
+    st.subheader("Dataset Library")
+    try:
+        current_datasets = discover_csv_datasets()
+        if current_datasets:
+            ds_rows = []
+            for dname, dpath in current_datasets.items():
+                info = get_dataset_info(dpath)
+                ds_rows.append({"Nama": dname, "File": os.path.basename(dpath),
+                    "MB": info.get("size_mb","?"), "Baris": info.get("num_rows","?"),
+                    "Fitur": info.get("num_cols","?"), "Genre": info.get("num_classes","?")})
+            st.dataframe(pd.DataFrame(ds_rows), use_container_width=True, hide_index=True)
+            st.caption(f"Total: {len(current_datasets)} dataset tersedia.")
+        else:
+            st.info("Belum ada dataset. Upload CSV di bawah atau taruh manual di datasets/csv/")
+    except Exception as exc:
+        st.error(f"Error scanning datasets: {exc}")
+
+    st.markdown("---")
+    st.subheader("Upload Dataset CSV Baru")
+
+    with st.expander("Format CSV yang Didukung"):
         st.markdown(
             "| Kolom | Tipe | Keterangan |\n"
             "|-------|------|------------|\n"
-            "| `label` | string | Nama genre (Rock, Pop, Jazz, dll) |\n"
-            "| `mfcc1_mean` ... `mfcc20_var` | float | 40 kolom MFCC |\n"
-            "| `chroma_stft_mean`, `chroma_stft_var` | float | Fitur Chroma |\n"
-            "| `rms_mean`, `rms_var` | float | Root Mean Square |\n"
-            "| `tempo` | float | BPM estimasi |\n"
-            "| `filename` | string | Opsional — dihapus otomatis |\n"
+            "| `label` | string | Nama genre |\n"
+            "| `mfcc1_mean` ... `mfcc20_var` | float | MFCC |\n"
+            "| `chroma_stft_mean/var` | float | Chroma |\n"
+            "| `rms_mean/var`, `tempo` | float | Energy & BPM |\n"
         )
 
-    uploaded_csv = st.file_uploader("Pilih file CSV dataset:", type=["csv"], key="upload_csv")
+    uploaded_csv = st.file_uploader("Pilih file CSV:", type=["csv"], key="upload_csv")
 
     if uploaded_csv is not None:
-        with st.spinner("Memvalidasi dataset..."):
+        with st.spinner("Memvalidasi..."):
             try:
                 df_upload = pd.read_csv(uploaded_csv)
-                is_valid, msg = validate_uploaded_csv(df_upload)
+                is_valid, msg = validate_csv_for_training(df_upload)
                 if is_valid:
                     st.success(msg)
                     c1u, c2u, c3u = st.columns(3)
                     c1u.metric("Total Baris", f"{len(df_upload):,}")
                     c2u.metric("Total Kolom", len(df_upload.columns))
-                    c3u.metric("Jumlah Kelas", df_upload["label"].nunique())
-                    st.dataframe(df_upload.head(5), use_container_width=True)
+                    c3u.metric("Kelas Genre", df_upload["label"].nunique())
+                    with st.expander("Preview 5 Baris"):
+                        st.dataframe(df_upload.head(5), use_container_width=True)
                     st.bar_chart(df_upload["label"].value_counts())
-                    if st.button("💾 Simpan Dataset ke Library", type="primary", key="save_ds_btn"):
-                        save_path = save_uploaded_dataset(df_upload, uploaded_csv.name)
-                        st.success(f"✅ Tersimpan ke: `{save_path}`")
+                    cname, cbtn = st.columns([3, 1])
+                    with cname:
+                        custom_name = st.text_input("Nama file:", value=uploaded_csv.name, key="ds_custom_name")
+                    with cbtn:
+                        st.write(""); st.write("")
+                        if st.button("Simpan ke Library", type="primary", key="save_ds_btn"):
+                            sp = save_csv_to_library(df_upload, custom_name)
+                            st.success(f"Tersimpan: `{sp}`")
+                            st.info("Klik Refresh untuk melihat di Training tab.")
                 else:
                     st.error(msg)
-            except Exception as e:
-                st.error(f"❌ Gagal membaca CSV: {e}")
+            except Exception as exc2:
+                st.error(f"Gagal membaca CSV: {exc2}")
 
-# ══════════════════════════════════════════════════════════════════════════════
+    st.markdown("---")
+    st.subheader("Taruh Dataset Manual (untuk file >200MB)")
+    st.code(
+        "datasets/csv/\n"
+        "    fma_3secs.csv\n"
+        "    fma_30secs.csv\n"
+        "    gtzan_features.csv   <- taruh di sini\n"
+        "    dataset_baru.csv     <- taruh di sini",
+        language="text"
+    )
+    st.info("Setelah taruh file, klik Refresh. Dataset langsung muncul di Training tab.")
+
 # TAB 7: Leaderboard & Komparasi Model
 # ══════════════════════════════════════════════════════════════════════════════
 with tab7:
