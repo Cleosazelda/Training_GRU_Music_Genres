@@ -135,7 +135,7 @@ def extract_features_from_audio(file_path):
     return np.array(features, dtype=np.float32)
 
 
-def preprocess_audio_for_inference(file_path):
+def preprocess_audio_for_inference(file_path, scaler_path='models/scaler.pkl'):
     """
     Pipeline inferensi audio: ekstrak fitur → normalisasi dengan scaler tersimpan.
 
@@ -143,6 +143,7 @@ def preprocess_audio_for_inference(file_path):
 
     Args:
         file_path (str): Path ke file audio.
+        scaler_path (str): Path ke file scaler tersimpan.
 
     Returns:
         np.ndarray: Array shape (1, 57) siap untuk model.predict().
@@ -151,10 +152,10 @@ def preprocess_audio_for_inference(file_path):
     features = features.reshape(1, -1)  # shape: (1, 57)
 
     try:
-        scaler = joblib.load('models/scaler.pkl')
+        scaler = joblib.load(scaler_path)
         features_scaled = scaler.transform(features).astype(np.float32)
     except FileNotFoundError:
-        print("[WARNING] scaler.pkl tidak ditemukan, fitur tidak dinormalisasi.")
+        print(f"[WARNING] {scaler_path} tidak ditemukan, fitur tidak dinormalisasi.")
         features_scaled = features
 
     return features_scaled  # shape: (1, 57) — langsung kompatibel dengan Dense layer

@@ -93,7 +93,7 @@ st.markdown("""
 # ─── Header ────────────────────────────────────────────────────────────────────
 st.title("🎵 Music Genre Classification")
 st.markdown(
-    "**Deep Neural Network (DNN/FFNN)** untuk Klasifikasi Genre Musik dari Fitur Statistik Audio — "
+    "**GRU Arsitek** untuk Klasifikasi Genre Musik dari Fitur Statistik Audio — "
     "Dioptimalkan dengan Mixed Precision & tf.data Pipeline."
 )
 
@@ -463,57 +463,67 @@ with tab3:
     st.header("📊 Evaluation Dashboard")
     st.markdown("Visualisasi performa model DNN terbaik yang telah ditraining.")
 
-    model_path   = "models/best_dnn_model.keras"
-    history_path = "models/training_history.pkl"
-
-    # Fallback untuk nama file lama
-    if not os.path.exists(model_path) and os.path.exists("models/best_dnn_model.h5"):
-        model_path = "models/best_dnn_model.h5"
-
-    if os.path.exists(model_path) and os.path.exists(history_path):
-        history_data = joblib.load(history_path)
-        classes      = joblib.load("models/classes.pkl")
-
-        st.subheader("📈 Grafik Training")
-        class HistoryDummy:
-            def __init__(self, h): self.history = h
-        fig = plot_training_history(HistoryDummy(history_data))
-        st.pyplot(fig)
-
-        st.markdown("---")
-        st.subheader("🎯 Metrik Evaluasi pada Data Test")
-
-        selected_ds_eval = st.selectbox("Dataset untuk Evaluasi:", list(DATASET_OPTIONS.keys()), key="ds_eval")
-        EVAL_DATASET_PATH = DATASET_OPTIONS[selected_ds_eval]
-
-        with st.spinner("Menghitung metrik pada data test..."):
-            from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
-            try:
-                _, X_test_ev, _, y_test_ev, _ = load_and_preprocess_data(EVAL_DATASET_PATH)
-                model_ev = tf.keras.models.load_model(model_path)
-                y_pred_prob = model_ev.predict(X_test_ev, verbose=0)
-                y_pred = np.argmax(y_pred_prob, axis=1)
-
-                acc  = accuracy_score(y_test_ev, y_pred)
-                prec = precision_score(y_test_ev, y_pred, average='weighted', zero_division=0)
-                rec  = recall_score(y_test_ev, y_pred, average='weighted', zero_division=0)
-                f1   = f1_score(y_test_ev, y_pred, average='weighted', zero_division=0)
-
-                m1, m2, m3, m4 = st.columns(4)
-                m1.metric("🎯 Accuracy",            f"{acc*100:.2f}%")
-                m2.metric("📊 Precision (Weighted)", f"{prec*100:.2f}%")
-                m3.metric("📈 Recall (Weighted)",    f"{rec*100:.2f}%")
-                m4.metric("🏆 F1-Score (Weighted)",  f"{f1*100:.2f}%")
-
-                st.markdown("<br>", unsafe_allow_html=True)
-                fig_cm = plot_confusion_matrix_custom(y_test_ev, y_pred, classes)
-                st.pyplot(fig_cm)
-
-            except Exception as e:
-                st.error(f"❌ Gagal evaluasi: {e}")
-    else:
+    try:
+        all_exps_eval = load_all_experiments()
+    except Exception as e:
+        all_exps_eval = []
+        
+    if not all_exps_eval:
         st.info("ℹ️ Belum ada model yang ditraining. Silakan ke tab **Model Training** terlebih dahulu.")
+    else:
+        exp_options = { f"[{e.get('dataset_name', '')}] {e['run_id']} (Val Acc: {e['metrics'].get('val_accuracy', 0)*100:.2f}%)": e for e in all_exps_eval }
+        selected_exp_label = st.selectbox("Pilih Eksperimen / Model yang ingin dievaluasi:", list(exp_options.keys()), key="eval_exp_choice")
+        selected_exp = exp_options[selected_exp_label]
+        
+        run_dir = selected_exp.get("run_dir", "")
+        model_path = selected_exp.get("model_path", "")
+        history_path = os.path.join(run_dir, "history.pkl")
+        classes_path = os.path.join(run_dir, "classes.pkl")
+
+        if os.path.exists(model_path) and os.path.exists(history_path):
+            history_data = joblib.load(history_path)
+            classes      = joblib.load(classes_path)
+
+            st.subheader("📈 Grafik Training")
+            class HistoryDummy:
+                def __init__(self, h): self.history = h
+            fig = plot_training_history(HistoryDummy(history_data))
+            st.pyplot(fig)
+
+            st.markdown("---")
+            st.subheader("🎯 Metrik Evaluasi pada Data Test")
+
+            selected_ds_eval = st.selectbox("Dataset untuk Evaluasi:", list(DATASET_OPTIONS.keys()), key="ds_eval")
+            EVAL_DATASET_PATH = DATASET_OPTIONS[selected_ds_eval]
+
+            with st.spinner("Menghitung metrik pada data test..."):
+                from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+                try:
+                    _, X_test_ev, _, y_test_ev, _ = load_and_preprocess_data(EVAL_DATASET_PATH)
+                    model_ev = tf.keras.models.load_model(model_path)
+                    y_pred_prob = model_ev.predict(X_test_ev, verbose=0)
+                    y_pred = np.argmax(y_pred_prob, axis=1)
+
+                    acc  = accuracy_score(y_test_ev, y_pred)
+                    prec = precision_score(y_test_ev, y_pred, average='weighted', zero_division=0)
+                    rec  = recall_score(y_test_ev, y_pred, average='weighted', zero_division=0)
+                    f1   = f1_score(y_test_ev, y_pred, average='weighted', zero_division=0)
+
+                    m1, m2, m3, m4 = st.columns(4)
+                    m1.metric("🎯 Accuracy",            f"{acc*100:.2f}%")
+                    m2.metric("📊 Precision (Weighted)", f"{prec*100:.2f}%")
+                    m3.metric("📈 Recall (Weighted)",    f"{rec*100:.2f}%")
+                    m4.metric("🏆 F1-Score (Weighted)",  f"{f1*100:.2f}%")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    fig_cm = plot_confusion_matrix_custom(y_test_ev, y_pred, classes)
+                    st.pyplot(fig_cm)
+
+                except Exception as e:
+                    st.error(f"❌ Gagal evaluasi: {e}")
+        else:
+            st.warning("⚠️ File model atau history untuk eksperimen ini tidak ditemukan di direktori lokal.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 4: Analisis Akademis
@@ -600,16 +610,26 @@ with tab5:
     st.markdown(
         "Unggah file audio `.wav` atau `.mp3`. Sistem akan mengekstrak **57 fitur statistik** "
         "menggunakan Librosa, menormalisasinya dengan `StandardScaler` tersimpan, "
-        "lalu memprediksi genre menggunakan model DNN."
+        "lalu memprediksi genre menggunakan model GRU."
     )
 
-    model_path = "models/best_dnn_model.keras"
-    if not os.path.exists(model_path) and os.path.exists("models/best_dnn_model.h5"):
-        model_path = "models/best_dnn_model.h5"
-
-    if not os.path.exists(model_path):
-        st.warning("⚠️ Model belum tersedia. Lakukan training di tab **Model Training** terlebih dahulu.")
+    try:
+        all_exps_pred = load_all_experiments()
+    except Exception as e:
+        all_exps_pred = []
+        
+    if not all_exps_pred:
+        st.warning("⚠️ Belum ada model yang ditraining. Lakukan training di tab **Model Training** terlebih dahulu.")
     else:
+        exp_options_pred = { f"[{e.get('dataset_name', '')}] {e['run_id']} (Val Acc: {e['metrics'].get('val_accuracy', 0)*100:.2f}%)": e for e in all_exps_pred }
+        selected_pred_label = st.selectbox("Pilih Eksperimen / Model untuk prediksi:", list(exp_options_pred.keys()), key="pred_exp_choice")
+        selected_pred_exp = exp_options_pred[selected_pred_label]
+        
+        model_path = selected_pred_exp.get("model_path", "")
+        run_dir = selected_pred_exp.get("run_dir", "")
+        classes_path = os.path.join(run_dir, "classes.pkl")
+        scaler_path = os.path.join(run_dir, "scaler.pkl")
+
         uploaded_file = st.file_uploader("Pilih file audio:", type=['wav', 'mp3', 'ogg'])
 
         if uploaded_file is not None:
@@ -622,11 +642,11 @@ with tab5:
                         f.write(uploaded_file.getbuffer())
 
                     with st.spinner("Mengekstrak 57 fitur statistik audio (MFCC, Chroma, dll)..."):
-                        X_infer = preprocess_audio_for_inference(temp_path)
+                        X_infer = preprocess_audio_for_inference(temp_path, scaler_path=scaler_path)
 
                     with st.spinner("Memprediksi genre..."):
                         model_inf = tf.keras.models.load_model(model_path)
-                        classes   = joblib.load("models/classes.pkl")
+                        classes   = joblib.load(classes_path)
                         pred_probs = model_inf.predict(X_infer, verbose=0)[0]
 
                     pred_idx   = np.argmax(pred_probs)
@@ -792,8 +812,17 @@ with tab7:
             rows_bpd = []
             for ds, exp in bpd.items():
                 m = exp["metrics"]
+                hp = exp.get("hyperparams", {})
+                arch = hp.get("architecture", "DNN")
+                if arch == "GRU":
+                    detail = f"GRU ({hp.get('gru_layers', '-')}L, {hp.get('gru_units', '-')}U)"
+                    if hp.get("bidirectional"): detail += " Bi"
+                else:
+                    detail = f"DNN ({hp.get('hidden_layers', '-')}L, {hp.get('hidden_units', '-')}U)"
+
                 rows_bpd.append({
                     "Dataset":       ds,
+                    "Arsitektur":    detail,
                     "Val Acc (%)":   round(m.get("val_accuracy", 0)*100, 2),
                     "F1 (%)":        round(m.get("f1", 0)*100, 2),
                     "Precision (%)": round(m.get("precision", 0)*100, 2),
@@ -825,16 +854,38 @@ with tab7:
         # ── Comparison Bar Chart ───────────────────────────────────────────────
         try:
             st.subheader("📈 Grafik Komparasi 4 Metrik")
-            disp = sorted(all_exps, key=lambda e: e["timestamp"], reverse=True)[:10]
 
-            def _lbl(rid):
-                c = rid.replace("run_", "").replace("(", "").replace(")", "").replace(",", "")
-                p = c.split("_")
-                ts   = "_".join(p[:2]) if len(p) >= 2 else c
-                slug = "_".join(p[2:4]) if len(p) >= 4 else ""
-                return f"{ts}\n{slug}"
+            ds_list = list(set([e.get("dataset_name", "Unknown") for e in all_exps]))
+            comp_mode = st.radio("Pilih Mode Komparasi:", 
+                                 ["Model Terbaik Antar Dataset", "Eksperimen dalam 1 Dataset"], 
+                                 horizontal=True)
+            
+            if comp_mode == "Model Terbaik Antar Dataset":
+                bpd = get_best_per_dataset(all_exps)
+                disp = list(bpd.values())
+            else:
+                selected_comp_ds = st.selectbox("Pilih Dataset:", ds_list, key="comp_ds")
+                disp = sorted([e for e in all_exps if e.get("dataset_name", "Unknown") == selected_comp_ds], 
+                              key=lambda e: e["timestamp"], reverse=True)[:10]
 
-            lbls  = [_lbl(e["run_id"]) for e in disp]
+            def _lbl(e):
+                hp = e.get("hyperparams", {})
+                arch = hp.get("architecture", "DNN")
+                if arch == "GRU":
+                    lbl = f"GRU {hp.get('gru_layers', '-')}L"
+                    if hp.get("bidirectional"): lbl += " Bi"
+                else:
+                    lbl = f"DNN {hp.get('hidden_layers', '-')}L"
+                
+                if comp_mode == "Model Terbaik Antar Dataset":
+                    ds_name = e.get("dataset_name", "Unknown")
+                    if len(ds_name) > 15: ds_name = ds_name[:12] + "..."
+                    return f"{ds_name}\n{lbl}"
+                else:
+                    ts = e['run_id'].split('_')[1] if len(e['run_id'].split('_')) > 1 else e['run_id']
+                    return f"{lbl}\n{ts}"
+
+            lbls  = [_lbl(e) for e in disp]
             va    = [e["metrics"].get("val_accuracy", 0)*100 for e in disp]
             f1s   = [e["metrics"].get("f1", 0)*100 for e in disp]
             precs = [e["metrics"].get("precision", 0)*100 for e in disp]

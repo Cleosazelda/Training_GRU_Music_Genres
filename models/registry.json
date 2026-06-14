@@ -303,5 +303,222 @@
     },
     "run_dir": "models\\run_20260614_063458_gtzan_3sec_(10.6_MB)",
     "model_path": "models\\run_20260614_063458_gtzan_3sec_(10.6_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_074343_datasetyudha_(0.5_MB",
+    "timestamp": "2026-06-14T07:43:43.962670",
+    "dataset_name": "datasetyudha (0.5 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 1,
+      "gru_units": 64,
+      "dense_units": 64,
+      "dense_activation": "relu",
+      "bidirectional": false,
+      "dropout_rate": 0.2,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.4375,
+      "val_accuracy": 0.49000000953674316,
+      "precision": 0.4623152284064924,
+      "recall": 0.49,
+      "f1": 0.4672922596660807,
+      "val_loss": 1.4573798179626465,
+      "epochs_run": 88
+    },
+    "run_dir": "models\\run_20260614_074343_datasetyudha_(0.5_MB",
+    "model_path": "models\\run_20260614_074343_datasetyudha_(0.5_MB\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_080337_datasetyudha_(0.5_MB",
+    "timestamp": "2026-06-14T08:03:37.914619",
+    "dataset_name": "datasetyudha (0.5 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "relu",
+      "bidirectional": false,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.3987500071525574,
+      "val_accuracy": 0.45500001311302185,
+      "precision": 0.4794952977990735,
+      "recall": 0.455,
+      "f1": 0.4496094800179663,
+      "val_loss": 1.6421726942062378,
+      "epochs_run": 50
+    },
+    "run_dir": "models\\run_20260614_080337_datasetyudha_(0.5_MB",
+    "model_path": "models\\run_20260614_080337_datasetyudha_(0.5_MB\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_082104_datasetyudha_(0.5_MB",
+    "timestamp": "2026-06-14T08:21:05.076451",
+    "dataset_name": "datasetyudha (0.5 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "use_grad_clip": false,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.6762499809265137,
+      "val_accuracy": 0.6050000190734863,
+      "precision": 0.6070994230227977,
+      "recall": 0.59,
+      "f1": 0.5894447152937718,
+      "val_loss": 1.3903915882110596,
+      "epochs_run": 66
+    },
+    "run_dir": "models\\run_20260614_082104_datasetyudha_(0.5_MB",
+    "model_path": "models\\run_20260614_082104_datasetyudha_(0.5_MB\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_092110_datasetyudha_(0.5_MB",
+    "timestamp": "2026-06-14T09:21:10.843705",
+    "dataset_name": "datasetyudha (0.5 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 3,
+      "gru_units": 256,
+      "dense_units": 128,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.3,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.7887499928474426,
+      "val_accuracy": 0.6150000095367432,
+      "precision": 0.5835495349736837,
+      "recall": 0.58,
+      "f1": 0.5733712728218088,
+      "val_loss": 1.5282689332962036,
+      "epochs_run": 40
+    },
+    "run_dir": "models\\run_20260614_092110_datasetyudha_(0.5_MB",
+    "model_path": "models\\run_20260614_092110_datasetyudha_(0.5_MB\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_165150_gtzan_3sec_(10.6_MB)",
+    "timestamp": "2026-06-14T16:51:52.521175",
+    "dataset_name": "gtzan_3sec (10.6 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 3,
+      "gru_units": 256,
+      "dense_units": 128,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.3,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.9146646857261658,
+      "val_accuracy": 0.8323323130607605,
+      "precision": 0.8295528008391884,
+      "recall": 0.8288288288288288,
+      "f1": 0.8290517915101562,
+      "val_loss": 0.7413303852081299,
+      "epochs_run": 55
+    },
+    "run_dir": "models\\run_20260614_165150_gtzan_3sec_(10.6_MB)",
+    "model_path": "models\\run_20260614_165150_gtzan_3sec_(10.6_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_200119_gtzan_3sec_(10.6_MB)",
+    "timestamp": "2026-06-14T20:01:19.509871",
+    "dataset_name": "gtzan_3sec (10.6 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 2,
+      "gru_units": 128,
+      "dense_units": 64,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.25,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "Adam",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.884759783744812,
+      "val_accuracy": 0.7837837934494019,
+      "precision": 0.7613366456463503,
+      "recall": 0.7527527527527528,
+      "f1": 0.7541939625322669,
+      "val_loss": 0.8474662899971008,
+      "epochs_run": 38
+    },
+    "run_dir": "models\\run_20260614_200119_gtzan_3sec_(10.6_MB)",
+    "model_path": "models\\run_20260614_200119_gtzan_3sec_(10.6_MB)\\model.keras"
+  },
+  {
+    "run_id": "run_20260614_224242_datasetyudha_3_sec_(",
+    "timestamp": "2026-06-14T22:42:42.961166",
+    "dataset_name": "datasetyudha_3_sec (4.9 MB)",
+    "hyperparams": {
+      "architecture": "GRU",
+      "gru_layers": 3,
+      "gru_units": 256,
+      "dense_units": 128,
+      "dense_activation": "swish",
+      "bidirectional": true,
+      "dropout_rate": 0.3,
+      "l2_reg_rate": 0.001,
+      "optimizer_name": "AdamW",
+      "learning_rate": 0.001,
+      "batch_size": 64,
+      "use_grad_clip": true,
+      "use_mixed_precision": true
+    },
+    "metrics": {
+      "train_accuracy": 0.9111611843109131,
+      "val_accuracy": 0.8163163065910339,
+      "precision": 0.8173709313741974,
+      "recall": 0.8073073073073073,
+      "f1": 0.8092124880373847,
+      "val_loss": 0.8495205044746399,
+      "epochs_run": 40
+    },
+    "run_dir": "models\\run_20260614_224242_datasetyudha_3_sec_(",
+    "model_path": "models\\run_20260614_224242_datasetyudha_3_sec_(\\model.keras"
   }
 ]
